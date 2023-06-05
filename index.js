@@ -1,78 +1,101 @@
-// const { log } = require('console');
-const http = require("http");
+const express = require('express');
 const fs = require("fs");
+const morgan = require('morgan');
 
 const index = fs.readFileSync("index.html", "utf-8");
 const data = JSON.parse(fs.readFileSync("data.json", "utf-8"));
 const products = data.products;
 
-// +"/product":
-//       res.setHeader("Content-Type", "text/html");
-//       let modified_index = index.replace('**title**',product.title).replace('**url**',product.thumbnail).replace('**price**',product.price).replace('**rating**',product.rating)
-//       res.end(modified_index);
-//       break;
-
-const server = http.createServer((req, res) => {
-  console.log(req.url);
-  if(req.url.startsWith('/product')){
-    const id = req.url.split('/')[2];
-    const product = products.find(p=>p.id ===(+id))
-    console.log(product);
-
-    res.setHeader("Content-Type", "text/html");
-
-    let modified_index = index.replace('**title**',product.title)
-    .replace('**url**',product.thumbnail)
-    .replace('**price**',product.price)
-    .replace('**rating**',product.rating)
-    res.end(modified_index);
-    return;
-}
+//server start
+const server = express();
 
 
-  switch (req.url) {
-    case "/":
-      res.setHeader("Content-Type", "text/html");
-      res.end(index);
-      break;
 
-    case "/api":
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(data));
-      break;
+server.use(express.json());
 
-    // case "/product":
-    //   res.setHeader("Content-Type", "text/html");
-    //   let modified_index = index.replace('**title**',product.title).replace('**url**',product.thumbnail).replace('**price**',product.price).replace('**rating**',product.rating)
-    //   res.end(modified_index);
-    //   break;
+server.use(morgan('dev'))
 
-    default:
-      res.writeHead(404, "NOT FOUND");
-      res.end();
+
+//static hosting - slash / k baad tum ese directly access kr sakte ho middleware ki zarurat nhi hogi 
+//built in static middleware
+server.use(express.static('public')); 
+
+
+// MIDDLEWARE 
+// example - jaise ap kisi country se req bheji kisi website mein if vo website nhi de allow karti apki country ko toh vo vapis bhej deti hai ya allow kr deti hai .
+
+// server.use((req,res,next) =>{
+//   //yeh waha req.f=get dusre wala get hai info laa kr deta hai 
+//   console.log(req.method,req.ip,req.hostname,new Date(),req.get('User-Agent'))
+//   next()
+// })
+
+
+const auth = ((req,res,next) =>{
+  // console.log(req.query)
+  // if(req.query.password == '123'){
+  //   next()
+  // }
+
+//express req  ki body ko nhi nikalta apne aap.so we use built in middleware for this we'll use express.json middleware
+  if(req.body.password == '123'){
+    next()
+  }else{
+    res.sendStatus(401);
   }
-  console.log("SERVER STARTED");
-  // res.setHeader('Dummy','DummyValue');
+  next()
+})
+
+// yeh pure program mein auth wala middleware laga raha hai jo ki galat hai kyuki sab mein auth thodi lagega so hum route mein hi auth wlaa middleware daal denge jaha chaiye jaise login sign up mein 
+
+// server.use(auth);
+
+
+// check kro auth chll raha hai ya nhi yeh daalo url 
+// http://localhost:8080/?password=123
+
+//API - Endpoint - Route
+// server.get('/',auth,(req,res) => {
+//   res.json({type:'GET'})
+// })
+server.get('/product/:id',auth,(req,res) => {
+  // yeh jo /:id kia hai ese bolte hai url parameter mtlab product k baad kuch bhi ho sakta hai product static hai 
+  console.log(req.params)
+  res.json({type:'GET'})
+})
+server.post('/',auth,(req,res) => {
+  res.json({type:'POST'})
+})
+server.put('/',(req,res) => {
+  res.json({type:'PUT'})
+})
+server.delete('/',(req,res) => {
+  res.json({type:'DELETE'})
+})
+server.patch('/',(req,res) => {
+  res.json({type:'PATCH'})
+})
+
+
+
+
+
+
+
+
+
+
+// server.get('/demo',(req,res) => {
+  // res.send('<h1>hello world</h1>');
+  // res.sendFile('/Users/Sanya/Desktop/BACKEND/New folder/index.html');
+  // res.json(products);
+  // res.sendStatus(404);
+  // res.status(201).send('<h1>hello</h1>');
+// })
+
+
+//server end
+server.listen(8080,() => {
+  console.log('server started')
 });
 
-server.listen(8080);
-
-//FILE SYSTEM MODULE
-// const fs = require('fs');
-
-// const text = fs.readFileSync('demo.txt','utf-8' );
-// console.log(text);
-
-// fs.readFile('demo.txt','utf-8',(err,txt) => {
-//     console.log(txt)
-// } );
-
-// console.log("HELLO")
-// terminal mein  node index.js likho run hogi yeh file and yeh js code chalega
-//importing module
-// const lib = require('./lib')
-
-// import {sum,diff} from './lib';
-
-// console.log(sum(4,5),diff(3,6))
-// const a = 5;
