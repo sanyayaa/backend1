@@ -1,78 +1,83 @@
-// const { log } = require('console');
-const http = require("http");
+const express = require('express');
 const fs = require("fs");
+const morgan = require('morgan');
 
 const index = fs.readFileSync("index.html", "utf-8");
 const data = JSON.parse(fs.readFileSync("data.json", "utf-8"));
 const products = data.products;
 
-// +"/product":
-//       res.setHeader("Content-Type", "text/html");
-//       let modified_index = index.replace('**title**',product.title).replace('**url**',product.thumbnail).replace('**price**',product.price).replace('**rating**',product.rating)
-//       res.end(modified_index);
-//       break;
+//server start
+const server = express();
 
-const server = http.createServer((req, res) => {
-  console.log(req.url);
-  if(req.url.startsWith('/product')){
-    const id = req.url.split('/')[2];
-    const product = products.find(p=>p.id ===(+id))
-    console.log(product);
-
-    res.setHeader("Content-Type", "text/html");
-
-    let modified_index = index.replace('**title**',product.title)
-    .replace('**url**',product.thumbnail)
-    .replace('**price**',product.price)
-    .replace('**rating**',product.rating)
-    res.end(modified_index);
-    return;
-}
+//bodyParser
+server.use(express.json());
+server.use(morgan('default'))
+server.use(express.static('public')); 
 
 
-  switch (req.url) {
-    case "/":
-      res.setHeader("Content-Type", "text/html");
-      res.end(index);
-      break;
+//API
+//Products
+//API ROOT,base URL, example - google.com/api/v2
+// C R U D
 
-    case "/api":
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(data));
-      break;
+//CREATE API usnig POST
+//Create POST/products
+server.post('/products',(req,res) => {
+  console.log(req.body);
+  products.push(req.body);
+  res.status(201).json(req.body)
+})
 
-    // case "/product":
-    //   res.setHeader("Content-Type", "text/html");
-    //   let modified_index = index.replace('**title**',product.title).replace('**url**',product.thumbnail).replace('**price**',product.price).replace('**rating**',product.rating)
-    //   res.end(modified_index);
-    //   break;
 
-    default:
-      res.writeHead(404, "NOT FOUND");
-      res.end();
-  }
-  console.log("SERVER STARTED");
-  // res.setHeader('Dummy','DummyValue');
+
+//READ API   GET/products
+server.get('/products',(req,res) => {
+  res.json(products);
+})
+
+//READ API   GET/products/:id
+server.get('/products/:id',(req,res) => {
+  //vaise yeh string id thi toh convert krne k liyen umber mein we added +
+  const id = +req.params.id;
+  const product = products.find(p=>p.id===id)
+  res.json(product);
+})
+
+
+//UPDATE PUT /products/:id
+// put mein last data ko overwrite kr dia jata hai 
+server.put('/products/:id',(req,res) => {
+  const id = +req.params.id;
+  const productIndex = products.findIndex(p=>p.id===id)
+  products.splice(productIndex,1,{...req.body,id})
+  res.status(201).json();
+})
+//patch mein overwrite hi krte jo mein change kr raha hu vo change ho baaki ka sab same rahe
+
+//UPDATE PATCH /products/:id
+server.patch('/products/:id',(req,res) => {
+  const id = +req.params.id;
+  const productIndex = products.findIndex(p=>p.id===id)
+  const product = products[productIndex];
+  products.splice(productIndex,1,{...product,...req.body})
+  res.status(201).json();
+})
+
+
+
+//DELETE DELETE /products/:id
+server.delete('/products/:id',(req,res) => {
+  const id = +req.params.id;
+  const productIndex = products.findIndex(p=>p.id===id)
+  const product = products[productIndex];
+  products.splice(productIndex,1)
+  res.status(201).json(product);
+})
+
+
+
+//server end
+server.listen(8080,() => {
+  console.log('server started')
 });
 
-server.listen(8080);
-
-//FILE SYSTEM MODULE
-// const fs = require('fs');
-
-// const text = fs.readFileSync('demo.txt','utf-8' );
-// console.log(text);
-
-// fs.readFile('demo.txt','utf-8',(err,txt) => {
-//     console.log(txt)
-// } );
-
-// console.log("HELLO")
-// terminal mein  node index.js likho run hogi yeh file and yeh js code chalega
-//importing module
-// const lib = require('./lib')
-
-// import {sum,diff} from './lib';
-
-// console.log(sum(4,5),diff(3,6))
-// const a = 5;
